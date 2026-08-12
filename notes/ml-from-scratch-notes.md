@@ -169,7 +169,7 @@ $$
 all possible predictions lie in the column space of $X$:
 
 $$
-\hat y\in\operatorname{Col}(X).
+\hat y\in\mathrm{Col}(X).
 $$
 
 At the OLS optimum,
@@ -181,13 +181,13 @@ $$
 This means
 
 $$
-r\perp\operatorname{Col}(X).
+r\perp\mathrm{Col}(X).
 $$
 
 Therefore,
 
 $$
-\boxed{\hat y=\operatorname{proj}_{\operatorname{Col}(X)}(y)}.
+\boxed{\hat y=\mathrm{proj}_{\mathrm{Col}(X)}(y)}.
 $$
 
 A useful optimization interpretation:
