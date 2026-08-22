@@ -72,8 +72,8 @@ def fit_logistic_regression(X, y, lr, epochs, reg_lambda=0.0):
 def main():
     np.random.seed(0)
     n = 200
-    X0 = np.random.randn(n//2, 2) + np.array([-2, -2])
-    X1 = np.random.randn(n//2, 2) + np.array([2, 2])
+    X0 = 2*np.random.randn(n//2, 2) + np.array([-2, -2])
+    X1 = 2*np.random.randn(n//2, 2) + np.array([2, 2])
     X = np.vstack([X0, X1])
     y = np.concatenate([
         np.zeros(n//2),
