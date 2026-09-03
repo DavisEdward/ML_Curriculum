@@ -487,3 +487,459 @@ $$
 The identity matrix matters because $X^TX$ is a $d\times d$ matrix. Ridge adds $\lambda$ to each diagonal direction of $X^TX$, increasing small eigenvalues and improving conditioning.
 
 This is the key connection between ridge and the Stage 1 collinearity experiment.
+
+
+---
+
+# Stage 2 — Logistic Regression, BCE, and L2 Regularization
+
+## Sigmoid and binary cross-entropy
+
+Logistic regression maps a linear logit to a probability:
+
+$$
+z=Xw+b, \qquad \hat y=\sigma(z)=\frac{1}{1+e^{-z}}.
+$$
+
+The sigmoid derivative was reconstructed as
+
+$$
+\boxed{\sigma'(z)=\sigma(z)(1-\sigma(z))}.
+$$
+
+For binary targets $y\in\{0,1\}$, BCE is
+
+$$
+\boxed{
+L(y,\hat y)=
+-y\log \hat y-(1-y)\log(1-\hat y)
+}.
+$$
+
+For a batch, mean BCE is
+
+$$
+\boxed{
+L_{\mathrm{BCE}}
+=
+-\frac1n\sum_i
+\left[
+y_i\log \hat y_i+(1-y_i)\log(1-\hat y_i)
+\right].
+}
+$$
+
+The two terms act as a selector: when $y=1$, only $-\log\hat y$ remains; when $y=0$, only $-\log(1-\hat y)$ remains.
+
+Important numerical detail: clip probabilities away from exactly $0$ and $1$ before taking logs.
+
+## BCE + sigmoid gradient simplification
+
+Starting from
+
+$$
+\frac{\partial L}{\partial \hat y}
+=
+-\frac{y}{\hat y}
++
+\frac{1-y}{1-\hat y}
+$$
+
+and
+
+$$
+\frac{\partial \hat y}{\partial z}
+=
+\hat y(1-\hat y),
+$$
+
+the terms cancel to give
+
+$$
+\boxed{
+\frac{\partial L}{\partial z}
+=
+\hat y-y.
+}
+$$
+
+This is an important reusable result: sigmoid + BCE passes back a prediction-error signal in logit space.
+
+For mean BCE,
+
+$$
+\boxed{
+\nabla_w L
+=
+\frac1n X^T(\hat y-y)
+}
+$$
+
+and
+
+$$
+\boxed{
+\frac{\partial L}{\partial b}
+=
+\frac1n\sum_i(\hat y_i-y_i).
+}
+$$
+
+Per sample,
+
+$$
+\nabla_wL_i=x_i^T(\hat y_i-y_i).
+$$
+
+The matrix form is the sum of those per-sample feature-weighted residuals.
+
+## L2-regularized logistic regression
+
+Using
+
+$$
+L_{\mathrm{total}}
+=
+L_{\mathrm{BCE}}+\lambda\|w\|_2^2,
+$$
+
+the gradients are
+
+$$
+\boxed{
+\nabla_wL_{\mathrm{total}}
+=
+\frac1nX^T(\hat y-y)+2\lambda w
+}
+$$
+
+and
+
+$$
+\boxed{
+\frac{\partial L_{\mathrm{total}}}{\partial b}
+=
+\frac1n\sum_i(\hat y_i-y_i).
+}
+$$
+
+Bias is generally not regularized. Penalizing $b$ would impose an artificial preference for decision boundaries near the coordinate origin. The intercept should be free to shift the boundary to where the data live.
+
+Regularization experiments showed the expected behavior: increasing $\lambda$ shrinks $\|w\|$, while BCE can rise even if the classification boundary changes little. BCE measures confidence/calibration as well as 0/1 correctness.
+
+## Convexity and conditioning
+
+The logistic-regression Hessian has the form
+
+$$
+\boxed{
+H=\frac1nX^TRX,
+}
+$$
+
+where
+
+$$
+R=\operatorname{diag}(\hat y_i(1-\hat y_i)).
+$$
+
+Since $R\succeq0$,
+
+$$
+v^THv
+=
+\frac1n(Xv)^TR(Xv)
+\ge0,
+$$
+
+so the objective is convex. Any local minimum is global, although the optimum need not be unique if the Hessian is singular.
+
+Rank deficiency or near-collinearity in $X$ can make the Hessian singular or poorly conditioned. Curvature can also become small when predictions saturate near $0$ or $1$, because $\hat y_i(1-\hat y_i)$ becomes small.
+
+---
+
+# Stage 3 — PCA, Eigendecomposition, and SVD
+
+## Covariance matrix and PCA objective
+
+For centered data
+
+$$
+X_c=X-\mu,
+$$
+
+the covariance matrix is
+
+$$
+\boxed{
+C=\frac1nX_c^TX_c.
+}
+$$
+
+Each entry is a covariance between feature columns; diagonal entries are feature variances.
+
+For any unit direction $v$, projected coordinates are
+
+$$
+z=X_cv,
+$$
+
+and the variance along that direction is
+
+$$
+\boxed{
+\mathrm{Var}(z)=v^TCv.
+}
+$$
+
+If $Cv=\lambda v$ and $\|v\|=1$, then
+
+$$
+v^TCv=\lambda.
+$$
+
+Therefore the eigenvalue is exactly the variance captured along its eigenvector. The first principal component is the eigenvector with largest eigenvalue.
+
+## Why the principal components are orthogonal
+
+A covariance matrix is symmetric. If
+
+$$
+Cv_1=\lambda_1v_1,\qquad
+Cv_2=\lambda_2v_2
+$$
+
+with $\lambda_1\ne\lambda_2$, symmetry gives
+
+$$
+\lambda_1v_1^Tv_2
+=
+v_1^TCv_2
+=
+\lambda_2v_1^Tv_2,
+$$
+
+so
+
+$$
+(\lambda_1-\lambda_2)v_1^Tv_2=0
+$$
+
+and therefore
+
+$$
+\boxed{v_1^Tv_2=0}.
+$$
+
+Geometrically, orthogonality ensures later components capture new variance rather than reusing directions already represented.
+
+Using the orthonormal eigenbasis $v_1,\dots,v_d$, any unit vector can be written
+
+$$
+v=\sum_j a_jv_j,\qquad \sum_j a_j^2=1.
+$$
+
+Then
+
+$$
+\boxed{
+v^TCv=\sum_j\lambda_ja_j^2.
+}
+$$
+
+The largest eigenvalue wins the unconstrained optimization. Requiring $v\perp v_1$ forces $a_1=0$, so the next-largest eigenvalue wins, and so on.
+
+## Projection, reconstruction, and explained variance
+
+Keeping the top $k$ eigenvectors as columns of $V_k$,
+
+$$
+\boxed{
+Z=X_cV_k
+}
+$$
+
+and reconstruction is
+
+$$
+\boxed{
+\hat X=ZV_k^T+\mu.
+}
+$$
+
+The matrix $V_kV_k^T$ projects centered data onto the retained principal subspace.
+
+Explained variance ratio is
+
+$$
+\boxed{
+\mathrm{EVR}_j=
+\frac{\lambda_j}{\sum_i\lambda_i}.
+}
+$$
+
+The denominator must use all eigenvalues, not only the retained $k$.
+
+Discarding components removes the variance in those orthogonal directions. Reconstruction error therefore decreases monotonically as $k$ increases.
+
+## PCA via SVD
+
+For centered data,
+
+$$
+X_c=U\Sigma V^T.
+$$
+
+Then
+
+$$
+X_c^TX_c
+=
+V\Sigma^2V^T
+$$
+
+and hence
+
+$$
+C
+=
+\frac1nV\Sigma^2V^T.
+$$
+
+Therefore:
+
+- PCA eigenvectors are the right singular vectors, the columns of $V$.
+- Covariance eigenvalues and singular values satisfy
+
+$$
+\boxed{
+\lambda_i=\frac{\sigma_i^2}{n}
+}
+$$
+
+for the $1/n$ covariance convention.
+
+PCA coordinates can be computed either as
+
+$$
+\boxed{Z=X_cV_k}
+$$
+
+or directly as
+
+$$
+\boxed{Z=U_k\Sigma_k}.
+$$
+
+NumPy's `np.linalg.svd` returns `Vt = V^T`, so the top-$k$ PCA component matrix can be obtained with
+
+```python
+components = Vt[:k, :].T
+```
+
+Use `np.linalg.eigh` rather than general `eig` for covariance matrices because they are symmetric.
+
+## Low-rank approximation
+
+Truncated SVD
+
+$$
+X_k=U_k\Sigma_kV_k^T
+$$
+
+is the best rank-$k$ approximation under the Frobenius norm (Eckart-Young theorem).
+
+The squared reconstruction error is
+
+$$
+\boxed{
+\|X-X_k\|_F^2
+=
+\sum_{j=k+1}^r\sigma_j^2.
+}
+$$
+
+This links PCA's discarded variance directly to low-rank approximation error.
+
+---
+
+# Stage 3.5 — Numerical Gradients and Backprop Scaffolding
+
+## Central finite differences
+
+For a scalar function $f:\mathbb R^d\to\mathbb R$,
+
+$$
+\frac{\partial f}{\partial x_i}
+\approx
+\frac{
+f(x+\epsilon e_i)-f(x-\epsilon e_i)
+}{
+2\epsilon
+}.
+$$
+
+Forward difference has truncation error $O(\epsilon)$, while central difference cancels the leading even-order error term and has truncation error $O(\epsilon^2)$.
+
+Making $\epsilon$ arbitrarily small is not optimal. When the two function evaluations become nearly equal, floating-point subtraction suffers catastrophic cancellation. Gradient checking therefore balances truncation error against floating-point error.
+
+A numerical gradient checker was implemented and verified against
+
+$$
+f(w)=\sum_iw_i^2,\qquad \nabla f=2w.
+$$
+
+This concept is understood; do not repeat equivalent bookkeeping exercises unless needed to debug later backprop.
+
+## Jacobians and vector-Jacobian products
+
+For
+
+$$
+y=f(x),\qquad
+x\in\mathbb R^d,\quad
+y\in\mathbb R^m,
+$$
+
+the Jacobian is
+
+$$
+J=\frac{\partial y}{\partial x}\in\mathbb R^{m\times d}.
+$$
+
+For scalar loss $L(y)$, the chain rule gives
+
+$$
+\boxed{
+\nabla_xL
+=
+J^T\nabla_yL.
+}
+$$
+
+Backprop/reverse-mode autodiff generally does not materialize the full Jacobian. It propagates vector-Jacobian products through the computation graph. This is crucial because a full Jacobian can require $O(md)$ storage even though the gradient needed downstream has only $d$ entries.
+
+---
+
+# Current checkpoint and pacing
+
+Stages 1–3 are complete at the intended conceptual level. Stage 3.5 has covered the finite-difference and Jacobian/VJP foundations needed to begin neural-network backprop.
+
+Next: **Stage 4 — NumPy neural network from scratch**, beginning with a linear layer
+
+$$
+Z=XW+b
+$$
+
+and deriving/implementing backward passes for $X$, $W$, and $b$, then activations, loss, backpropagation, mini-batches, softmax, and multiclass cross-entropy.
+
+## Teaching/pacing note
+
+The learner has an engineering and mathematics background and substantial prior calculus exposure. Much of classical regression/calculus is review.
+
+For review material:
+- use fast diagnostic questions to verify reconstruction;
+- avoid repeating the same concept in multiple near-identical exercises;
+- once understanding is demonstrated, move on.
+
+Spend deeper time on concepts that are new or directly important for modern ML/deep learning, research engineering, optimization, representation learning, and later paper reproduction.
