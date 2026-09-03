@@ -6,6 +6,17 @@ Rebuild my mathematical and implementation fluency by constructing fundamental M
 
 This is primarily a learning project. Correct reasoning and understanding matter more than producing a polished application.
 
+## Current checkpoint
+
+Completed at the intended conceptual level:
+
+- Stage 1 — linear regression
+- Stage 2 — ridge regression, logistic regression, BCE, gradient descent, L2 regularization
+- Stage 3 — covariance, PCA via eigendecomposition, PCA via SVD, explained variance, reconstruction, low-rank connection
+- Stage 3.5 foundations — central finite differences, numerical gradient checking, Jacobian/vector-Jacobian-product intuition
+
+**Next:** Stage 4 — NumPy neural network from scratch, beginning with the linear layer $Z=XW+b$ and its backward pass.
+
 ## Progression
 
 ### Stage 1 — Linear regression
@@ -82,7 +93,7 @@ For every abstraction PyTorch provides, identify what part of the NumPy implemen
 
 Do not give me complete implementations.
 
-When I'm stuck, first ask me:
+When I'm stuck on unfamiliar material, first ask me:
 
 - what inputs and outputs should be;
 - what dimensions are involved;
@@ -93,7 +104,20 @@ Prefer hints over answers.
 
 Require me to derive important gradients before implementing them.
 
-At the end of each algorithm, have me explain:
+### Pacing
+
+The learner has an engineering and mathematics background and substantial prior calculus exposure.
+
+For material that is clearly review:
+
+1. Use a small number of diagnostic derivations or conceptual questions.
+2. Once understanding is demonstrated, move on.
+3. Do not repeat the same idea through multiple near-identical implementations or experiments merely for practice.
+4. Use numerical gradient checking later as a debugging tool, not as repeated calculus practice.
+
+Spend more time on genuinely new concepts and on ideas with high transfer to modern deep learning, optimization, research engineering, and paper reproduction.
+
+At the end of each substantial new algorithm, have me explain:
 
 1. the mathematical objective;
 2. the optimization method;
